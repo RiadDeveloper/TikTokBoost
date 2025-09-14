@@ -1,4 +1,4 @@
-# import undetected_chromedriver as uc
+import undetected_chromedriver as uc
 import random
 import platform, os, time, requests
 from colorama import Fore
@@ -20,15 +20,30 @@ Modified by:
 class holo:
     def __init__(self):
         self.show_process = False
-        chrome_options = options()
+        chrome_options = uc.ChromeOptions()
         chrome_options.add_argument('--log-level=1')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--disable-extensions')
+        chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
+        chrome_options.add_argument('--disable-web-security')
+        chrome_options.add_argument('--allow-running-insecure-content')
         chrome_options.add_argument('--incognito')
         if '--show' in sys.argv:
             pass
         else:
             chrome_options.add_argument('--headless')
         
-        self.driver = selenium.webdriver.Chrome(options=chrome_options)
+        try:
+            self.driver = uc.Chrome(options=chrome_options, version_main=137)
+            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        except Exception as e:
+            print(f"Error initializing Chrome: {e}")
+            print("Trying with default Chrome...")
+            self.driver = uc.Chrome(version_main=137)
         
         self.interface = interface()
         self.captcha_box = '/html/body/div[5]/div[2]/form/div/div'
@@ -62,8 +77,20 @@ class holo:
             print(self.color + banner)
             print("\n" + self.interface._print("Waiting for Zefoy to load... (if you get a 502 Error = Blocked country or VPN is on)"))
             
-            self.driver.get("https://zefoy.com")
-            self.wait_for_xpath(self.captcha_box)
+            # Add a small delay to ensure browser is fully initialized
+            time.sleep(2)
+            
+            try:
+                self.driver.get("https://zefoy.com")
+                print(self.interface._print("Website loaded, waiting for elements..."))
+                time.sleep(3)  # Give page time to load
+                self.wait_for_xpath(self.captcha_box)
+            except Exception as e:
+                print(self.interface._print(f"Error loading website: {e}"))
+                print(self.interface._print("Retrying in 5 seconds..."))
+                time.sleep(5)
+                self.driver.get("https://zefoy.com")
+                self.wait_for_xpath(self.captcha_box)
             
             print(self.interface._print("Site loaded, enter the CAPTCHA to continue."))
             
